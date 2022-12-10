@@ -1,0 +1,24 @@
+Sokoban (Souko-ban) for CRISS CP/M computer www.criss.fun (c) Reshetnikov S. 
+
+Sokoban is a Japanese puzzle game created in 1981 by Hiroyuki Imabayashi.
+
+The player ** is confined to the board and may move horizontally or vertically 
+onto empty squares. The player can move a box ** (only one) by walking up to 
+it and push it to the square beyond. Boxes cannot be pulled, and they cannot 
+be pushed to squares with walls or other boxes. The number of boxes equals the
+number of storage locations (::). 
+
+The puzzle is solved when all boxes are placed at storage locations (**).
+
+Keyboard controls: 
+   + / - / L - select game level
+   Arrows - move the player and push boxes
+   Space or Enter - restart current level
+   ESC / Q / E - exit from the game.
+Mouse controls (if mouse is attached):
+   Movements - move the player
+   Movements with left button pressed - push the box
+   Right button click - restart with the current lavel
+
+Everything clear? Press any key to continue...
+

@@ -1,0 +1,525 @@
+       ASEG
+       .Z80
+       ORG   100H
+
+VIDEO  EQU   0F800H
+BDOS   EQU   0005H
+FCB    EQU   005CH
+
+       LD    (SSP),SP
+       DI
+       LD    SP,3000H
+       EI
+
+       LD    HL,(VIDEO)
+       LD    D,0D0H
+       LD    E,(HL)
+       LD    A,(DE)
+       PUSH  AF
+       POP   HL
+       LD    (TMP),HL
+       LD    C,6
+       LD    E,131
+       CALL  BDOS
+
+       LD    HL,FNAM
+       LD    DE,FCB
+       LD    BC,13
+       LDIR
+
+       LD    DE,FCB
+       LD    C,15
+       CALL  BDOS
+       INC   A
+       JP    Z,NO_F
+       LD    DE,4000
+       LD    C,26
+       CALL  BDOS
+       LD    C,20
+       LD    DE,FCB
+       CALL  BDOS
+       OR    A
+       JP    Z,START
+NO_F:  LD    A,5
+       LD    HL,N_F_T
+       LD    DE,NAME
+N_F0:  LD    BC,25
+       LDIR
+       EX    DE,HL
+       LD    BC,55
+       ADD   HL,BC
+       EX    DE,HL
+       DEC   A
+       JP    NZ,N_F0
+       LD    (EF),A
+START: LD    A,(EF)
+       OR    A
+       JP    Z,START1
+       LD    C,5
+       LD    DE,NAME
+       LD    HL,4000
+LP7:   LD    B,25
+LP8:   LD    A,(HL)
+       XOR   6EH
+       LD    (DE),A
+       INC   HL
+       INC   DE
+       DJNZ  LP8
+       PUSH  HL
+       EX    DE,HL
+       LD    DE,55
+       ADD   HL,DE
+       EX    DE,HL
+       POP   HL
+       DEC   C
+       JP    NZ,LP7
+
+START1:LD    HL,KART
+       LD    DE,VIDEO
+       LD    BC,80*24
+       LD    A,(SPD)
+       ADD   A,30H
+       LD    (VS),A
+       LD    A,(LEV)
+       ADD   A,30H
+       LD    (VU),A
+       LDIR
+
+LL:    CALL  WAIT
+       CP    'S'
+       JP    Z,PLAY
+       CP    's'
+       JP    Z,PLAY
+       CP    'W'
+       JP    Z,EXIT
+       CP    'w'
+       JP    Z,EXIT
+       CP    'I'
+       JP    Z,PUT_I
+       CP    'i'
+       JP    Z,PUT_I
+       CP    'L'
+       JP    Z,S_LEV
+       CP    'l'
+       JP    Z,S_LEV
+       CP    'B'
+       JP    Z,S_SPD
+       CP    'b'
+       JP    Z,S_SPD
+       JP    LL
+
+PLAY:  LD    A,'#'
+       LD    HL,VIDEO
+       LD    B,81
+
+LP1:   LD    (HL),A
+       INC   HL
+       DJNZ  LP1
+       LD    DE,79
+       LD    C,22
+LP2:   LD    B,78
+       LD    A,' '
+LP4:   LD    (HL),A
+       INC   HL
+       DJNZ  LP4
+       LD    (HL),'#'
+       INC   HL
+       LD    (HL),'#'
+       INC   HL
+       DEC   C
+       JR    NZ,LP2
+LP3:   LD    (HL),'#'
+       INC   HL
+       LD    A,H
+       OR    L
+       JP    NZ,LP3
+
+INIT:  LD    HL,0FBE0H
+       LD    (PX),HL
+       XOR   A
+       LD    (PTR),A
+       INC   A
+       LD    (EP),A
+       LD    A,5
+       LD    (TAB),A
+       LD    (DIR),A
+       LD    (HL),'$'
+       LD    BC,80
+       ADD   HL,BC
+       LD    (EX),HL
+       LD    (HL),127
+
+       LD   B,60
+       LD   A,'+'
+LP5:   CALL PUT_T
+       DJNZ LP5
+
+       LD   A,(LEV)
+       SLA   A
+       SLA   A
+       ADD  A,20
+       LD   B,A
+       LD   A,'#'
+LP6:   CALL PUT_T
+       DJNZ LP6
+
+       CALL  WAIT
+       JP    LL2
+
+MOVE:  LD    B,0
+
+PPPPP: PUSH  BC
+       LD    A,(SPEED)
+       LD    B,A
+DDDDD: DJNZ  DDDDD
+       POP   BC
+       DJNZ  PPPPP
+
+       LD    C,6
+       LD    E,0FFH
+       CALL  BDOS
+LL2:   AND   A
+       JR    Z,NO
+       CP    27
+       JP    Z,START
+       CP    34H
+       JR    C,NO
+       CP    37H
+       JR    C,YES
+       CP    38H
+       JR    NZ,NO
+YES:   SUB   33H
+       LD    (DIR),A
+NO:    LD    A,(PTR)
+       DEC   A
+       LD    (PTR),A
+       LD    E,A
+       LD    D,0
+       LD    HL,TAB
+       ADD   HL,DE
+       LD    A,(DIR)
+       LD    (HL),A
+       LD    HL,(PX)
+       LD    (HL),127
+       LD    A,(DIR)
+       CALL  SUB1
+       LD    (PX),HL
+       LD    A,(HL)
+       LD    (HL),'$'
+       CP    '#'
+       JR    Z,STOP
+       CP    127
+       JR    Z,STOP
+       CP    '+'
+       JR    NZ,NN
+       LD    A,'+'
+       CALL  PUT_T
+       JP    MOVE
+
+NN:    LD    HL,TAB
+       LD    A,(EP)
+       DEC   A
+       LD    (EP),A
+       LD    E,A
+       LD    D,0
+       ADD   HL,DE
+       LD    A,(HL)
+       LD    HL,(EX)
+       LD    (HL),' '
+       CALL  SUB1
+       LD    (EX),HL
+       JP    MOVE
+
+STOP:  LD    A,(LEV)
+       ADD   A,30H
+       LD    (UR),A
+       LD    A,(SPD)
+       ADD   A,30H
+       LD    (SKOR),A
+       LD    A,(EP)
+       LD    HL,PTR
+       SUB   (HL)
+       SUB   2
+       LD    L,A
+       LD    H,0
+       CALL  DESS
+       LD    (KROL),BC
+       LD    (KROL+2),DE
+       LD    A,(SPD)
+       LD    B,A
+       LD    D,H
+       LD    E,L
+SLP0:  ADD   HL,DE
+       DJNZ  SLP0
+       LD    A,(LEV)
+       RLCA
+       RLCA
+       RLCA
+       RLCA
+       RLCA
+       LD     E,A
+       LD     D,0
+       ADD    HL,DE
+       CALL   DESS
+       LD     (SCORE),BC
+       LD     (SCORE+2),DE
+
+       LD    DE,VIDEO+80*9+20
+       LD    HL,MSG
+LS3:   LD    A,(HL)
+       OR    A
+       JP    Z,LS4
+       LD    BC,40
+       LDIR
+       EX    DE,HL
+       LD    BC,40
+       ADD   HL,BC
+       EX    DE,HL
+       JP    LS3
+LS4:   LD    C,6
+       LD    E,0FFH
+       CALL  BDOS
+       LD    HL,0FFFFH
+LS8:   EX    (SP),HL
+       EX    (SP),HL
+       DEC   HL
+       LD    A,L
+       OR    H
+       JR    NZ,LS8
+       LD    C,6
+       LD    E,0FFH
+       CALL  BDOS
+       CALL  WAIT
+       JP    START
+
+EXIT:  LD    C,6
+       LD    E,12
+       CALL  BDOS
+       LD    C,6
+       LD    E,130
+       CALL  BDOS
+       DI
+       LD    SP,(SSP)
+       EI
+       RET
+
+DIV10: PUSH   DE
+       PUSH   BC
+       LD     DE,10
+       LD     BC,0
+DM1:   ADC    A,0
+       SBC    HL,DE
+       JP     C,DM0
+       INC    BC
+       JP     DM1
+DM0:   ADD    HL,DE
+       LD     A,L
+       ADD    A,30H
+       LD     H,B
+       LD     L,C
+       POP    BC
+       POP    DE
+       RET
+
+DESS:  PUSH   HL
+       CALL   DIV10
+       LD     D,A
+       CALL   DIV10
+       LD     E,A
+       CALL   DIV10
+       LD     B,A
+       CALL   DIV10
+       LD     C,A
+       POP    HL
+       LD     A,C
+       CP     30H
+       RET    NZ
+       LD     C,20H
+       LD     A,B
+       CP     30H
+       RET    NZ
+       LD     B,20H
+       LD     A,E
+       CP     30H
+       RET    NZ
+       LD     E,20H
+       RET
+
+RAND:  EXX
+       LD    HL,(TMP)
+       PUSH  HL
+       LD    DE,6208H
+       ADD   HL,DE
+       RR    H
+       RR    L
+       POP   DE
+       ADD   HL,DE
+       LD    A,H
+       ADD   A,L
+       LD    (TMP),HL
+       EXX
+       RET
+
+SUB1:  DEC   A
+       JR    NZ,N1
+       DEC   HL
+       RET
+N1:    DEC   A
+       JR    NZ,N2
+       LD    BC,80
+       ADD   HL,BC
+       RET
+N2:    DEC   A
+       JR    NZ,N3
+       INC   HL
+       RET
+N3:    LD    BC,-80
+       ADD   HL,BC
+       RET
+
+PUT_T: PUSH  AF
+       PUSH  BC
+       LD    BC,0
+L1:    LD    HL,(TMP)
+       ADD   HL,BC
+       LD    (TMP),HL
+       INC   BC
+       CALL  RAND
+       LD    E,A
+       CALL  RAND
+       AND   7
+       LD    D,A
+       LD    HL,VIDEO
+       ADD   HL,DE
+       LD    A,(HL)
+       CP    32
+       JR    NZ,L1
+       POP   BC
+       POP   AF
+       LD    (HL),A
+       RET
+
+WAIT:  EXX
+       LD    C,6
+       LD    E,0FFH
+       CALL  BDOS
+       OR    A
+       JP    Z,WAIT
+       EXX
+       RET
+
+PUT_I: LD    DE,VIDEO+80*6+10
+       LD    HL,INSTR
+LL3:   LD    A,(HL)
+       OR    A
+       JP    Z,LL4
+       LD    BC,40
+       LDIR
+       EX    DE,HL
+       LD    BC,40
+       ADD   HL,BC
+       EX    DE,HL
+       JP    LL3
+LL4:   CALL  WAIT
+       JP    START
+
+S_LEV: LD    A,(LEV)
+       INC   A
+       CP    10
+       JP    C,SL1
+       LD    A,1
+SL1:   LD    (LEV),A
+       JP    START
+
+S_SPD: LD    A,(SPD)
+       INC   A
+       CP    10
+       JP    C,SS1
+       LD    A,1
+SS1:   LD    (SPD),A
+       LD    D,A
+       LD    A,10
+       SUB   D
+       SLA   A
+       SLA   A
+       SLA   A
+       SLA   A
+       LD    (SPEED),A
+       JP    START
+
+PX:    DW    0
+TAB:   DS    100H,0
+PTR:   DB    0
+EP:    DB    0
+DIR:   DB    0
+EX:    DW    0
+TMP:   DW    0
+SSP:   DW    0
+SPEED: DW    50H
+SPD:   DW    5
+LEV:   DW    3
+EF:    DB    1
+FNAM:  DB    0,'UDAV    DAT',0
+
+KART:  DB    132,'                                              aWTORY PROGRAMMY:                '
+       DB    '    (   )     ****             *****                                            '
+       DB    '     > <      *****           ******       p R O H O V A E W   t. o.            '
+       DB    '    (   )      *****         ******       r E [ E T N I K O W   i. s.           '
+       DB    '     > <        *****       ******                                              '
+       DB    '    (   )         *****    ******                                               '
+       DB    '     > <            ***** ******                                                '
+       DB    '    (   )            **********    *****         *****   *********              '
+       DB    '     > <              ********    ******        ******   ***    ***             '
+       DB    '    (   )              ******    *** ***       *** ***   ***    ***             '
+       DB    '     > <     ****     ******    ***  ***      ***  ***   ********               '
+       DB    '    (   )     ****   ******    ***   ***     *********   ***    ***             '
+       DB    '     > <       ***********    ***    ***    ***    ***   ***    ***             '
+       DB    '    (   )        *******    *************  ***     ***   *********              '
+       DB    '     > <                    **         **                                       '
+       DB    '    (   )                    **       **                                        '
+       DB    '                                               dOSKA  pO^ETA :                  '
+       DB    '    s = nA^ALO IGRY                  +---------------------------------+        '
+       DB    '    i = iNSTRUKCIQ                   !    '
+NAME:  DB    '                             !        '
+       DB    '    l = sMENITX UROWENX   ( '
+VU:    DB                                '3 )      !                                 !        '
+       DB    '    b = sMENITX SKOROSTX  ( '
+VS:    DB                                '5 )      !                                 !        '
+       DB    '    w = wYHOD W sr/m                 !                                 !        '
+       DB    '                                     !                                 !        '
+       DB    ' wWEDITE, POVALUJSTA, KOMANDU...     +---------------------------------+        '
+
+INSTR: DB    ' +------------------------------------+ '
+       DB    ' !         kLAWI[I UPRAWLENIQ         ! '
+       DB    ' !                                    ! '
+       DB    ' !              wWERH                 ! '
+       DB    ' !               <8>                  ! '
+       DB    ' !    wLEWO <4>  <5>  <6> wPRAWO      ! '
+       DB    ' !              wNIZ                  ! '
+       DB    ' !                                    ! '
+       DB    ' !                                    ! '
+       DB    ' +------------------------------------+ '
+       DB    0
+
+N_F_T: DB    '      wnimanie !!!       '
+       DB    '                         '
+       DB    'oTSUTSTWUET ILI ISPOR^EN '
+       DB    '      FAJL REKORDOW      '
+       DB    136,'      UDAV.DAT !       ',132
+
+MSG:   DB    132,'+------------------------------------+ '
+       DB    ' !          wA[E DOSTIVENIE           ! '
+       DB    ' !    NA  '
+UR:    DB    '   UROWNE I  '
+SKOR:  DB    '   SKOROSTI    ! '
+       DB    ' !                                    ! '
+       DB    ' !          '
+KROL:  DB    '       KROLIKOW           ! '
+       DB    ' !     (1 KROLIK = 2/3 POPUGAQ)       ! '
+       DB    ' !                                    ! '
+       DB    ' !        ILI  '
+SCORE: DB    '      O^KOW            ! '
+       DB    ' +------------------------------------+ '
+       DB    0
+END
+
